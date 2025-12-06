@@ -28,6 +28,7 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             overflow: visible;
+            position: relative;
         }
 
         .header {
@@ -70,11 +71,10 @@
 
         .reset-button:hover {
             background: rgba(255, 255, 255, 0.3);
-            transform: rotate(90deg);
         }
 
         .reset-button:active {
-            transform: rotate(90deg) scale(0.9);
+            transform: scale(0.95);
         }
 
         .content {
@@ -181,11 +181,11 @@
             flex: 0 1 auto;
         }
 
-        .btn-kbbi {
+        .btn-dwds {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         }
 
-        .btn-daum {
+        .btn-naver {
             background: linear-gradient(135deg, #007bff 0%, #00bfff 100%);
         }
 
@@ -490,6 +490,13 @@
 
         .flashcard-nav button {
             flex: 1;
+            padding: 20px 12px; /* 높이 2배 */
+            font-size: 16px;
+        }
+
+        .flashcard-action-btn {
+            padding: 20px 12px; /* 높이 2배 */
+            font-size: 16px;
         }
 
         .flashcard-progress {
@@ -563,7 +570,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <button class="reset-button" onclick="resetAllData()" title="모든 데이터 초기화">✕</button>
+            <button class="reset-button" onclick="resetAllData()" title="모든 단어 초기화">×</button>
             <h1>🇩🇪 독일어 단어장</h1>
             <p>단어를 입력하고 플래시카드로 학습하세요</p>
         </div>
@@ -653,7 +660,7 @@
                         <button class="btn" id="flashcard-prev-btn">◀ 이전</button>
                         <button class="btn" id="flashcard-next-btn">다음 ▶</button>
                     </div>
-                    <button class="btn btn-secondary" id="flashcard-action-btn">암기 완료</button>
+                    <button class="btn btn-secondary flashcard-action-btn" id="flashcard-action-btn">암기 완료</button>
                 </div>
             </div>
         </div>
@@ -670,6 +677,15 @@
     let currentPageNotMem = 1;
     let currentPageMem = 1;
 
+    // 날짜 포맷 함수
+    function formatDate(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function saveToStorage() {
         localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
         localStorage.setItem('nextId', nextId.toString());
@@ -685,19 +701,6 @@
         if (storedId) nextId = parseInt(storedId);
     }
 
-    function resetAllData() {
-        if (confirm('정말로 모든 단어를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
-            localStorage.removeItem('vocabulary');
-            localStorage.removeItem('nextId');
-            vocabulary.words = [];
-            nextId = 1;
-            currentPageNotMem = 1;
-            currentPageMem = 1;
-            updateDisplay();
-            alert('모든 데이터가 초기화되었습니다.');
-        }
-    }
-
     loadFromStorage();
 
     function addWord() {
@@ -707,11 +710,23 @@
         const meaning = meaningInput.value.trim();
 
         if (word && meaning) {
+            // 중복 체크 (대소문자 구분 없이)
+            const isDuplicate = vocabulary.words.some(w => 
+                w.word.toLowerCase() === word.toLowerCase()
+            );
+            
+            if (isDuplicate) {
+                alert('이미 등록된 단어입니다.');
+                wordInput.focus();
+                return;
+            }
+
             vocabulary.words.push({
                 id: nextId++,
                 word: word,
                 meaning: meaning,
-                memorized: false
+                memorized: false,
+                addedDate: new Date().toISOString()
             });
             wordInput.value = '';
             meaningInput.value = '';
@@ -737,6 +752,18 @@
             vocabulary.words = vocabulary.words.filter(w => w.id !== id);
             saveToStorage();
             updateDisplay();
+        }
+    }
+
+    function resetAllData() {
+        if (confirm('정말 모든 단어를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+            if (confirm('최종 확인: 모든 데이터가 영구적으로 삭제됩니다.')) {
+                vocabulary.words = [];
+                nextId = 1;
+                saveToStorage();
+                updateDisplay();
+                alert('모든 단어가 삭제되었습니다.');
+            }
         }
     }
 
@@ -769,6 +796,16 @@
             const newMeaning = meaningInput.value.trim();
             
             if (newWord && newMeaning) {
+                // 중복 체크 (자기 자신은 제외)
+                const isDuplicate = vocabulary.words.some(w => 
+                    w.id !== id && w.word.toLowerCase() === newWord.toLowerCase()
+                );
+                
+                if (isDuplicate) {
+                    alert('이미 등록된 단어입니다.');
+                    return;
+                }
+
                 const word = vocabulary.words.find(w => w.id === id);
                 if (word) {
                     word.word = newWord;
@@ -783,29 +820,7 @@
     }
 
     function cancelEdit(id) {
-        const word = vocabulary.words.find(w => w.id === id);
-        const wordItem = document.querySelector(`[data-word-id="${id}"]`);
-        if (wordItem) {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            if (!searchTerm || word.word.includes(searchTerm) || word.meaning.includes(searchTerm)) {
-                wordItem.classList.remove('edit-mode');
-                wordItem.innerHTML = `
-                    <div class="word-text">${word.word}</div>
-                    <div class="word-meaning">${word.meaning}</div>
-                    <div class="word-actions">
-                        <button class="btn btn-small" onclick="event.stopPropagation(); toggleMemorized(${word.id})">
-                            ${word.memorized ? '암기 취소' : '암기 완료'}
-                        </button>
-                        <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); deleteWord(${word.id})">삭제</button>
-                        <button class="btn btn-small btn-edit" onclick="event.stopPropagation(); enterEditMode(${word.id})" title="수정">✏️</button>
-                        <button class="btn btn-small btn-kbbi" onclick="event.stopPropagation(); showKBBI(${word.id})">KBBI</button>
-                        <button class="btn btn-small btn-daum" onclick="event.stopPropagation(); showDaum(${word.id})">Daum</button>
-                    </div>`;
-                wordItem.onclick = () => { if (!event.target.closest('.word-actions')) enterEditMode(id); };
-            } else {
-                wordItem.remove();
-            }
-        }
+        updateDisplay(document.getElementById('searchInput').value);
     }
 
     function updateStats() {
@@ -897,8 +912,8 @@
                             </button>
                             <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); deleteWord(${word.id})">삭제</button>
                             <button class="btn btn-small btn-edit" onclick="event.stopPropagation(); enterEditMode(${word.id})" title="수정">✏️</button>
-                            <button class="btn btn-small btn-kbbi" onclick="event.stopPropagation(); showKBBI(${word.id})">KBBI</button>
-                            <button class="btn btn-small btn-daum" onclick="event.stopPropagation(); showDaum(${word.id})">Daum</button>
+                            <button class="btn btn-small btn-dwds" onclick="event.stopPropagation(); showDWDS(${word.id})">DWDS</button>
+                            <button class="btn btn-small btn-naver" onclick="event.stopPropagation(); showNaver(${word.id})">Naver</button>
                         </div>
                     </div>`).join('');
         };
@@ -920,18 +935,18 @@
         renderPagination('memPagination', memorized.length, currentPageMem, 'mem');
     }
 
-    function showKBBI(id) {
+    function showDWDS(id) {
         const word = vocabulary.words.find(w => w.id === id);
         if (word) window.open(
-            `https://kbbi.web.id/${encodeURIComponent(word.word)}`,
+            `https://www.dwds.de/wb/${encodeURIComponent(word.word)}`,
             '_blank'
         );
     }
 
-    function showDaum(id) {
+    function showNaver(id) {
         const word = vocabulary.words.find(w => w.id === id);
         if (word) window.open(
-            `https://dic.daum.net/search.do?q=${encodeURIComponent(word.word)}&dic=id`,
+            `https://dict.naver.com/dekodict/#/search?query=${encodeURIComponent(word.word)}`,
             '_blank'
         );
     }
@@ -945,7 +960,8 @@
         const data = vocabulary.words.map(w => ({
             '독일어': w.word,
             '한글 뜻': w.meaning,
-            '암기 여부': w.memorized ? 'O' : 'X'
+            '암기 여부': w.memorized,
+            '추가 날짜': formatDate(w.addedDate)
         }));
 
         const ws = XLSX.utils.json_to_sheet(data);
@@ -967,25 +983,43 @@
                 const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
                 let importCount = 0;
+                let duplicateCount = 0;
+
                 jsonData.forEach(row => {
                     const word = row['독일어'] || row['word'] || row['Word'];
                     const meaning = row['한글 뜻'] || row['meaning'] || row['Meaning'];
+                    const memorized = row['암기 여부'] === true || row['암기 여부'] === 'true' || row['암기 여부'] === 'TRUE';
+                    const addedDate = row['추가 날짜'] || row['date'] || row['Date'];
                     
                     if (word && meaning) {
-                        vocabulary.words.push({
-                            id: nextId++,
-                            word: String(word).trim(),
-                            meaning: String(meaning).trim(),
-                            memorized: false
-                        });
-                        importCount++;
+                        // 중복 체크
+                        const isDuplicate = vocabulary.words.some(w => 
+                            w.word.toLowerCase() === String(word).trim().toLowerCase()
+                        );
+                        
+                        if (isDuplicate) {
+                            duplicateCount++;
+                        } else {
+                            vocabulary.words.push({
+                                id: nextId++,
+                                word: String(word).trim(),
+                                meaning: String(meaning).trim(),
+                                memorized: memorized,
+                                addedDate: addedDate ? new Date(addedDate).toISOString() : new Date().toISOString()
+                            });
+                            importCount++;
+                        }
                     }
                 });
 
-                if (importCount > 0) {
+                if (importCount > 0 || duplicateCount > 0) {
                     saveToStorage();
                     updateDisplay();
-                    alert(`${importCount}개의 단어를 불러왔습니다.`);
+                    let message = `${importCount}개의 단어를 불러왔습니다.`;
+                    if (duplicateCount > 0) {
+                        message += `\n${duplicateCount}개의 중복 단어는 제외되었습니다.`;
+                    }
+                    alert(message);
                 } else {
                     alert('가져올 수 있는 단어가 없습니다.');
                 }
@@ -1038,10 +1072,10 @@
         const actionBtn = document.getElementById('flashcard-action-btn');
         if (currentFlashcardMode === 'notMemorized') {
             actionBtn.textContent = '암기 완료';
-            actionBtn.className = 'btn btn-secondary';
+            actionBtn.className = 'btn btn-secondary flashcard-action-btn';
         } else {
             actionBtn.textContent = '다시 암기하기';
-            actionBtn.className = 'btn btn-review';
+            actionBtn.className = 'btn btn-review flashcard-action-btn';
         }
     }
 
@@ -1107,6 +1141,14 @@
     document.getElementById('meaningInput').addEventListener('keypress', e => {
         if (e.key === 'Enter') addWord();
     });
+
+    // 기존 데이터에 addedDate가 없는 경우 추가
+    vocabulary.words.forEach(word => {
+        if (!word.addedDate) {
+            word.addedDate = new Date().toISOString();
+        }
+    });
+    saveToStorage();
 
     updateDisplay();
 </script>
