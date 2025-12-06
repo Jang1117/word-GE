@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>독일어 단어 암기 앱</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: visible;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px 15px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .content {
+            padding: 15px;
+        }
+
+        .input-section {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #e3e8ff;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .input-field {
+            width: 100%;
+        }
+
+        .input-field label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #4c51bf;
+            font-size: 0.9rem;
+        }
+
+        .input-field input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .input-field input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 6px;
+            justify-content: space-between;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            flex: 1;
+            white-space: nowrap;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-quiz {
+            background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+            box-shadow: 0 2px 8px rgba(255, 126, 95, 0.3);
+        }
+
+        .btn-review {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3) !important;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 12px;
+            min-width: auto;
+            flex: 0 1 auto;
+        }
+
+        .btn-kbbi {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .btn-daum {
+            background: linear-gradient(135deg, #007bff 0%, #00bfff 100%);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 15px 10px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 3px;
+        }
+
+        .stat-label {
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .word-lists {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .word-list {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .word-list-header {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: #2d3748;
+            padding: 15px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .memorized-header {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .word-list-content {
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .word-item {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .word-item:active {
+            transform: scale(0.98);
+            border-color: #4facfe;
+        }
+
+        .word-item.edit-mode {
+            background: #fff5e6;
+            border-color: #ffd700;
+        }
+
+        .word-text {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 6px;
+        }
+
+        .word-meaning {
+            color: #4a5568;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .word-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .edit-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .edit-inputs input {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .edit-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #a0aec0;
+            font-size: 1rem;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 15px 10px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            font-size: 13px;
+            min-width: 40px;
+        }
+
+        .pagination button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .floating-buttons {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+
+        .floating-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .floating-btn:active {
+            transform: scale(0.95);
+        }
+
+        .fab-flashcard {
+            background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+        }
+
+        .fab-review {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-button {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flashcard-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            justify-content: space-between;
+        }
+
+        .flashcard {
+            width: 100%;
+            max-width: 500px;
+            height: 300px;
+            margin: 0 auto;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.1s;
+            transform-style: preserve-3d;
+        }
+
+        .flashcard.is-flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            padding: 20px;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .flashcard-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .flashcard-back {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .flashcard-nav {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .flashcard-nav button {
+            flex: 1;
+        }
+
+        .flashcard-progress {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #4c51bf;
+            margin-bottom: 10px;
+        }
+
+        /* 검색 스타일 */
+        .search-section {
+            margin-bottom: 15px;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        /* 스크롤바 스타일 (웹킷 브라우저용) */
+        .word-list-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .word-list-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .word-list-content::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        .word-list-content::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* 가로 모드 최적화 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .flashcard {
+                height: 200px;
+            }
+            
+            .flashcard-face {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* 작은 화면 추가 최적화 */
+        @media (max-width: 360px) {
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            
+            .btn {
+                font-size: 12px;
+                padding: 9px 10px;
+            }
+            
+            .stat-number {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇩🇪 독일어 단어장</h1>
+            <p>단어를 입력하고 플래시카드로 학습하세요</p>
+        </div>
+
+        <div class="content">
+            <div class="input-section">
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="wordInput">독일어 단어</label>
+                        <input type="text" id="wordInput" placeholder="단어 입력">
+                    </div>
+                    <div class="input-field">
+                        <label for="meaningInput">한글 뜻</label>
+                        <input type="text" id="meaningInput" placeholder="뜻 입력">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn" onclick="addWord()">➕ 추가</button>
+                    <button class="btn btn-export" onclick="exportToExcel()">📥 내보내기</button>
+                    <button class="btn btn-export" onclick="document.getElementById('fileInput').click()">📂 가져오기</button>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="importFromExcel(event)" style="display: none;">
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalWords">0</div>
+                    <div class="stat-label">전체</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="memorizedWords">0</div>
+                    <div class="stat-label">암기</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="remainingWords">0</div>
+                    <div class="stat-label">남은단어</div>
+                </div>
+            </div>
+
+            <div class="search-section">
+                <input type="text" id="searchInput" placeholder="🔍 단어 검색..." oninput="updateDisplay(this.value)">
+            </div>
+
+            <div class="word-lists">
+                <div class="word-list">
+                    <div class="word-list-header">📚 암기할 단어</div>
+                    <div class="word-list-content" id="notMemorizedList"></div>
+                    <div class="pagination" id="notMemPagination"></div>
+                </div>
+
+                <div class="word-list">
+                    <div class="word-list-header memorized-header">✅ 암기한 단어</div>
+                    <div class="word-list-content" id="memorizedList"></div>
+                    <div class="pagination" id="memPagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 플로팅 버튼 -->
+    <div class="floating-buttons">
+        <button class="floating-btn fab-flashcard" id="startNotMemFlashcardBtn" title="플래시카드">
+            📖
+        </button>
+        <button class="floating-btn fab-review" id="startMemFlashcardBtn" title="복습하기">
+            🔄
+        </button>
+    </div>
+
+    <!-- 플래시카드 모달 -->
+    <div id="flashcard-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>플래시카드</h2>
+                <button class="close-button">&times;</button>
+            </div>
+            <div class="flashcard-container">
+                <div class="flashcard-progress" id="flashcard-progress">1 / 10</div>
+                <div class="flashcard" id="flashcard">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-face flashcard-front" id="flashcard-front">단어</div>
+                        <div class="flashcard-face flashcard-back" id="flashcard-back">뜻</div>
+                    </div>
+                </div>
+                <div class="flashcard-controls">
+                    <div class="flashcard-nav">
+                        <button class="btn" id="flashcard-prev-btn">◀ 이전</button>
+                        <button class="btn" id="flashcard-next-btn">다음 ▶</button>
+                    </div>
+                    <button class="btn btn-secondary" id="flashcard-action-btn">암기 완료</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const vocabulary = { words: [] };
+    let nextId = 1;
+    let currentFlashcardMode = 'notMemorized';
+    let flashcardWords = [];
+    let currentFlashcardIndex = 0;
+
+    const ITEMS_PER_PAGE = 10;
+    let currentPageNotMem = 1;
+    let currentPageMem = 1;
+
+    function saveToStorage() {
+        localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+        localStorage.setItem('nextId', nextId.toString());
+    }
+
+    function loadFromStorage() {
+        const stored = localStorage.getItem('vocabulary');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            vocabulary.words = parsed.words || [];
+        }
+        const storedId = localStorage.getItem('nextId');
+        if (storedId) nextId = parseInt(storedId);
+    }
+
+    loadFromStorage();
+
+    function addWord() {
+        const wordInput = document.getElementById('wordInput');
+        const meaningInput = document.getElementById('meaningInput');
+        const word = wordInput.value.trim();
+        const meaning = meaningInput.value.trim();
+
+        if (word && meaning) {
+            vocabulary.words.push({
+                id: nextId++,
+                word: word,
+                meaning: meaning,
+                memorized: false
+            });
+            wordInput.value = '';
+            meaningInput.value = '';
+            wordInput.focus();
+            saveToStorage();
+            updateDisplay();
+        } else {
+            alert('단어와 뜻을 모두 입력해주세요.');
+        }
+    }
+
+    function toggleMemorized(id) {
+        const word = vocabulary.words.find(w => w.id === id);
+        if (word) {
+            word.memorized = !word.memorized;
+            saveToStorage();
+            updateDisplay();
+        }
+    }
+
+    function deleteWord(id) {
+        if (confirm('정말 삭제하시겠습니까?')) {
+            vocabulary.words = vocabulary.words.filter(w => w.id !== id);
+            saveToStorage();
+            updateDisplay();
+        }
+    }
+
+    function enterEditMode(id) {
+        const word = vocabulary.words.find(w => w.id === id);
+        if (!word) return;
+
+        const wordItem = document.querySelector(`[data-word-id="${id}"]`);
+        if (wordItem) {
+            wordItem.classList.add('edit-mode');
+            wordItem.innerHTML = `
+                <div class="edit-inputs">
+                    <input type="text" id="edit-word-${id}" value="${word.word}">
+                    <input type="text" id="edit-meaning-${id}" value="${word.meaning}">
+                </div>
+                <div class="edit-buttons">
+                    <button class="btn btn-small" onclick="saveEdit(${id})">저장</button>
+                    <button class="btn btn-secondary btn-small" onclick="cancelEdit(${id})">취소</button>
+                </div>
+            `;
+        }
+    }
+
+    function saveEdit(id) {
+        const wordInput = document.getElementById(`edit-word-${id}`);
+        const meaningInput = document.getElementById(`edit-meaning-${id}`);
+        
+        if (wordInput && meaningInput) {
+            const newWord = wordInput.value.trim();
+            const newMeaning = meaningInput.value.trim();
+            
+            if (newWord && newMeaning) {
+                const word = vocabulary.words.find(w => w.id === id);
+                if (word) {
+                    word.word = newWord;
+                    word.meaning = newMeaning;
+                    saveToStorage();
+                    updateDisplay();
+                }
+            } else {
+                alert('단어와 뜻을 모두 입력해주세요.');
+            }
+        }
+    }
+
+    function cancelEdit(id) {
+        const word = vocabulary.words.find(w => w.id === id);
+        const wordItem = document.querySelector(`[data-word-id="${id}"]`);
+        if (wordItem) {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (!searchTerm || word.word.includes(searchTerm) || word.meaning.includes(searchTerm)) {
+                wordItem.classList.remove('edit-mode');
+                wordItem.innerHTML = `
+                    <div class="word-text">${word.word}</div>
+                    <div class="word-meaning">${word.meaning}</div>
+                    <div class="word-actions">
+                        <button class="btn btn-small" onclick="event.stopPropagation(); toggleMemorized(${word.id})">
+                            ${word.memorized ? '암기 취소' : '암기 완료'}
+                        </button>
+                        <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); deleteWord(${word.id})">삭제</button>
+                        <button class="btn btn-small btn-edit" onclick="event.stopPropagation(); enterEditMode(${word.id})" title="수정">✏️</button>
+                        <button class="btn btn-small btn-kbbi" onclick="event.stopPropagation(); showKBBI(${word.id})">KBBI</button>
+                        <button class="btn btn-small btn-daum" onclick="event.stopPropagation(); showDaum(${word.id})">Daum</button>
+                    </div>`;
+                wordItem.onclick = () => { if (!event.target.closest('.word-actions')) enterEditMode(id); };
+            } else {
+                wordItem.remove();
+            }
+        }
+    }
+
+    function updateStats() {
+        document.getElementById('totalWords').textContent = vocabulary.words.length;
+        const memorizedCount = vocabulary.words.filter(w => w.memorized).length;
+        document.getElementById('memorizedWords').textContent = memorizedCount;
+        document.getElementById('remainingWords').textContent = vocabulary.words.length - memorizedCount;
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function renderPagination(containerId, totalItems, currentPage, type) {
+        const container = document.getElementById(containerId);
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        
+        if (currentPage > 1) {
+            html += `<button class="btn btn-small" onclick="changePage(${type === 'notMem' ? '\'notMem\'' : '\'mem\''}, ${currentPage - 1})">◀</button>`;
+        }
+
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+
+        if (startPage > 1) {
+            html += `<button class="btn btn-small" onclick="changePage(${type === 'notMem' ? '\'notMem\'' : '\'mem\''}, 1)">1</button>`;
+            if (startPage > 2) html += '<span>...</span>';
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button class="btn btn-small ${i === currentPage ? 'active' : ''}" 
+                     onclick="changePage(${type === 'notMem' ? '\'notMem\'' : '\'mem\''}, ${i})">${i}</button>`;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += '<span>...</span>';
+            html += `<button class="btn btn-small" onclick="changePage(${type === 'notMem' ? '\'notMem\'' : '\'mem\''}, ${totalPages})">${totalPages}</button>`;
+        }
+
+        if (currentPage < totalPages) {
+            html += `<button class="btn btn-small" onclick="changePage(${type === 'notMem' ? '\'notMem\'' : '\'mem\''}, ${currentPage + 1})">▶</button>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function changePage(type, page) {
+        if (type === 'notMem') {
+            currentPageNotMem = page;
+        } else {
+            currentPageMem = page;
+        }
+        updateDisplay(document.getElementById('searchInput').value);
+    }
+
+    function updateDisplay(searchTerm = '') {
+        const filteredWords = vocabulary.words.filter(word => 
+            word.word.includes(searchTerm) || word.meaning.includes(searchTerm)
+        );
+        const notMemorized = filteredWords.filter(w => !w.memorized);
+        const memorized = filteredWords.filter(w => w.memorized);
+
+        shuffleArray(notMemorized);
+        shuffleArray(memorized);
+
+        updateStats();
+
+        const renderList = (container, data, paginatedData) => {
+            container.innerHTML = data.length === 0 
+                ? '<div class="empty-state">해당 단어가 없습니다.</div>'
+                : paginatedData.map(word => `
+                    <div class="word-item" data-word-id="${word.id}" 
+                        onclick="if (!event.target.closest('.word-actions')) enterEditMode(${word.id})">
+                        <div class="word-text">${word.word}</div>
+                        <div class="word-meaning">${word.meaning}</div>
+                        <div class="word-actions">
+                            <button class="btn btn-small" onclick="event.stopPropagation(); toggleMemorized(${word.id})">
+                                ${word.memorized ? '암기 취소' : '암기 완료'}
+                            </button>
+                            <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); deleteWord(${word.id})">삭제</button>
+                            <button class="btn btn-small btn-edit" onclick="event.stopPropagation(); enterEditMode(${word.id})" title="수정">✏️</button>
+                            <button class="btn btn-small btn-kbbi" onclick="event.stopPropagation(); showKBBI(${word.id})">KBBI</button>
+                            <button class="btn btn-small btn-daum" onclick="event.stopPropagation(); showDaum(${word.id})">Daum</button>
+                        </div>
+                    </div>`).join('');
+        };
+
+        const notMemorizedList = document.getElementById('notMemorizedList');
+        const paginatedNotMem = notMemorized.slice(
+            (currentPageNotMem - 1) * ITEMS_PER_PAGE,
+            currentPageNotMem * ITEMS_PER_PAGE
+        );
+        renderList(notMemorizedList, notMemorized, paginatedNotMem);
+        renderPagination('notMemPagination', notMemorized.length, currentPageNotMem, 'notMem');
+
+        const memorizedList = document.getElementById('memorizedList');
+        const paginatedMem = memorized.slice(
+            (currentPageMem - 1) * ITEMS_PER_PAGE,
+            currentPageMem * ITEMS_PER_PAGE
+        );
+        renderList(memorizedList, memorized, paginatedMem);
+        renderPagination('memPagination', memorized.length, currentPageMem, 'mem');
+    }
+
+    function showKBBI(id) {
+        const word = vocabulary.words.find(w => w.id === id);
+        if (word) window.open(
+            `https://kbbi.web.id/${encodeURIComponent(word.word)}`,
+            '_blank'
+        );
+    }
+
+    function showDaum(id) {
+        const word = vocabulary.words.find(w => w.id === id);
+        if (word) window.open(
+            `https://dic.daum.net/search.do?q=${encodeURIComponent(word.word)}&dic=id`,
+            '_blank'
+        );
+    }
+
+    function exportToExcel() {
+        if (vocabulary.words.length === 0) {
+            alert('내보낼 단어가 없습니다.');
+            return;
+        }
+
+        const data = vocabulary.words.map(w => ({
+            '독일어': w.word,
+            '한글 뜻': w.meaning,
+            '암기 여부': w.memorized ? 'O' : 'X'
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '단어장');
+        XLSX.writeFile(wb, '독일어_단어장.xlsx');
+    }
+
+    function importFromExcel(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                let importCount = 0;
+                jsonData.forEach(row => {
+                    const word = row['독일어'] || row['word'] || row['Word'];
+                    const meaning = row['한글 뜻'] || row['meaning'] || row['Meaning'];
+                    
+                    if (word && meaning) {
+                        vocabulary.words.push({
+                            id: nextId++,
+                            word: String(word).trim(),
+                            meaning: String(meaning).trim(),
+                            memorized: false
+                        });
+                        importCount++;
+                    }
+                });
+
+                if (importCount > 0) {
+                    saveToStorage();
+                    updateDisplay();
+                    alert(`${importCount}개의 단어를 불러왔습니다.`);
+                } else {
+                    alert('가져올 수 있는 단어가 없습니다.');
+                }
+            } catch (error) {
+                alert('파일을 읽는 중 오류가 발생했습니다.');
+                console.error(error);
+            }
+            event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // 플래시카드 기능
+    const flashcardModal = document.getElementById('flashcard-modal');
+
+    function startFlashcardSession(mode) {
+        currentFlashcardMode = mode;
+        if (mode === 'notMemorized') {
+            flashcardWords = vocabulary.words.filter(w => !w.memorized);
+        } else {
+            flashcardWords = vocabulary.words.filter(w => w.memorized);
+        }
+        
+        if (flashcardWords.length === 0) {
+            const alertMessage = mode === 'notMemorized'
+                ? '플래시카드로 학습할 단어가 없습니다.'
+                : '복습할 암기한 단어가 없습니다.';
+            alert(alertMessage);
+            return;
+        }
+        
+        shuffleArray(flashcardWords);
+        currentFlashcardIndex = 0;
+        flashcardModal.style.display = 'block';
+        displayFlashcard();
+    }
+
+    function displayFlashcard() {
+        if (flashcardWords.length === 0) {
+            closeFlashcardModal();
+            return;
+        }
+        const word = flashcardWords[currentFlashcardIndex];
+        document.getElementById('flashcard-progress').textContent =
+            `${currentFlashcardIndex + 1} / ${flashcardWords.length}`;
+        document.getElementById('flashcard-front').textContent = word.word;
+        document.getElementById('flashcard-back').textContent = word.meaning;
+        document.getElementById('flashcard').classList.remove('is-flipped');
+
+        const actionBtn = document.getElementById('flashcard-action-btn');
+        if (currentFlashcardMode === 'notMemorized') {
+            actionBtn.textContent = '암기 완료';
+            actionBtn.className = 'btn btn-secondary';
+        } else {
+            actionBtn.textContent = '다시 암기하기';
+            actionBtn.className = 'btn btn-review';
+        }
+    }
+
+    function showNextFlashcard() {
+        if (flashcardWords.length === 0) return;
+        currentFlashcardIndex = (currentFlashcardIndex + 1) % flashcardWords.length;
+        displayFlashcard();
+    }
+
+    function showPrevFlashcard() {
+        if (flashcardWords.length === 0) return;
+        currentFlashcardIndex =
+            (currentFlashcardIndex - 1 + flashcardWords.length) % flashcardWords.length;
+        displayFlashcard();
+    }
+
+    function handleFlashcardAction() {
+        if (flashcardWords.length === 0) return;
+        const currentWord = flashcardWords[currentFlashcardIndex];
+        const originalWord = vocabulary.words.find(w => w.id === currentWord.id);
+        
+        if (originalWord) {
+            originalWord.memorized = !originalWord.memorized;
+        }
+
+        flashcardWords.splice(currentFlashcardIndex, 1);
+        
+        if (currentFlashcardIndex >= flashcardWords.length && flashcardWords.length > 0) {
+            currentFlashcardIndex = 0;
+        }
+        
+        displayFlashcard();
+    }
+
+    function closeFlashcardModal() {
+        flashcardModal.style.display = 'none';
+        saveToStorage();
+        updateDisplay();
+    }
+    
+    // 이벤트 리스너
+    document.getElementById('startNotMemFlashcardBtn')
+        .addEventListener('click', () => startFlashcardSession('notMemorized'));
+    document.getElementById('startMemFlashcardBtn')
+        .addEventListener('click', () => startFlashcardSession('memorized'));
+
+    flashcardModal.querySelector('.close-button')
+        .addEventListener('click', closeFlashcardModal);
+    document.getElementById('flashcard')
+        .addEventListener('click', () =>
+            document.getElementById('flashcard').classList.toggle('is-flipped')
+        );
+    document.getElementById('flashcard-next-btn')
+        .addEventListener('click', showNextFlashcard);
+    document.getElementById('flashcard-prev-btn')
+        .addEventListener('click', showPrevFlashcard);
+    document.getElementById('flashcard-action-btn')
+        .addEventListener('click', handleFlashcardAction);
+
+    document.getElementById('wordInput').addEventListener('keypress', e => {
+        if (e.key === 'Enter') document.getElementById('meaningInput').focus();
+    });
+    document.getElementById('meaningInput').addEventListener('keypress', e => {
+        if (e.key === 'Enter') addWord();
+    });
+
+    updateDisplay();
+</script>
+
+</body>
+</html>
