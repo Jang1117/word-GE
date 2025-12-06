@@ -35,6 +35,7 @@
             color: white;
             padding: 20px 15px;
             text-align: center;
+            position: relative;
         }
 
         .header h1 {
@@ -46,6 +47,34 @@
         .header p {
             opacity: 0.9;
             font-size: 0.9rem;
+        }
+
+        .reset-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .reset-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .reset-button:active {
+            transform: rotate(90deg) scale(0.9);
         }
 
         .content {
@@ -534,6 +563,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <button class="reset-button" onclick="resetAllData()" title="모든 데이터 초기화">✕</button>
             <h1>🇩🇪 독일어 단어장</h1>
             <p>단어를 입력하고 플래시카드로 학습하세요</p>
         </div>
@@ -653,6 +683,19 @@
         }
         const storedId = localStorage.getItem('nextId');
         if (storedId) nextId = parseInt(storedId);
+    }
+
+    function resetAllData() {
+        if (confirm('정말로 모든 단어를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+            localStorage.removeItem('vocabulary');
+            localStorage.removeItem('nextId');
+            vocabulary.words = [];
+            nextId = 1;
+            currentPageNotMem = 1;
+            currentPageMem = 1;
+            updateDisplay();
+            alert('모든 데이터가 초기화되었습니다.');
+        }
     }
 
     loadFromStorage();
