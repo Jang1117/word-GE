@@ -108,16 +108,24 @@
             font-size: 0.9rem;
         }
 
-        .input-field input {
+        .input-field input,
+        .input-field textarea {
             width: 100%;
             padding: 12px 14px;
             border: 2px solid #e2e8f0;
             border-radius: 10px;
             font-size: 16px;
+            font-family: inherit;
             transition: all 0.3s ease;
         }
 
-        .input-field input:focus {
+        .input-field textarea {
+            resize: vertical;
+            min-height: 44px;
+        }
+
+        .input-field input:focus,
+        .input-field textarea:focus {
             outline: none;
             border-color: #4facfe;
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
@@ -187,6 +195,37 @@
 
         .btn-naver {
             background: linear-gradient(135deg, #007bff 0%, #00bfff 100%);
+        }
+
+        .gemini-section {
+            background: #fff8f0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #ffe8cc;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #4a5568;
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .generate-progress {
+            font-size: 0.85rem;
+            color: #4c51bf;
+            min-height: 18px;
         }
 
         .stats {
@@ -282,6 +321,21 @@
             font-size: 0.95rem;
         }
 
+        .word-example {
+            color: #4c51bf;
+            font-style: italic;
+            font-size: 0.88rem;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .word-example-translation {
+            color: #718096;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
         .word-actions {
             display: flex;
             flex-wrap: wrap;
@@ -301,6 +355,16 @@
             border: 2px solid #e2e8f0;
             border-radius: 8px;
             font-size: 14px;
+        }
+
+        .edit-inputs textarea {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 44px;
         }
 
         .edit-buttons {
@@ -453,8 +517,10 @@
             height: 100%;
             backface-visibility: hidden;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 10px;
             font-size: 1.5rem;
             font-weight: bold;
             border-radius: 15px;
@@ -462,6 +528,14 @@
             padding: 20px;
             text-align: center;
             word-break: break-word;
+            overflow-y: auto;
+        }
+
+        .flashcard-example {
+            font-size: 0.95rem;
+            font-weight: 400;
+            font-style: italic;
+            opacity: 0.9;
         }
 
         .flashcard-front {
@@ -572,26 +646,61 @@
         <div class="header">
             <button class="reset-button" onclick="resetAllData()" title="모든 단어 초기화">×</button>
             <h1>🇩🇪 독일어 단어장</h1>
-            <p>단어를 입력하고 플래시카드로 학습하세요</p>
         </div>
 
         <div class="content">
-            <div class="input-section">
+            <div style="display:flex;gap:10px;margin-bottom:15px;">
+                <button class="btn btn-export" id="toggleExampleSectionBtn" style="flex:1;" onclick="toggleExampleSection()">🤖 AI 챗으로 예문 만들기</button>
+                <button class="btn" id="toggleInputSectionBtn" style="flex:1;" onclick="toggleInputSection()">➕ 새 단어 직접 입력</button>
+                <button class="btn btn-export" style="flex:1;" onclick="exportToExcel()">📥 내보내기</button>
+                <button class="btn btn-export" style="flex:1;" onclick="document.getElementById('fileInput').click()">📂 가져오기</button>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="importFromExcel(event)" style="display: none;">
+            </div>
+
+            <div class="gemini-section" id="exampleSection" style="display:none;">
+                <p style="font-size:0.85rem;color:#4a5568;margin:0;">API 키 없이, Claude.ai나 Gemini 같은 무료 채팅 화면에 복사·붙여넣기로 예문을 채우는 방법입니다.</p>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="overwriteExamplesCheckbox">
+                    기존 예문도 덮어쓰기
+                </label>
+                <button class="btn btn-export" id="copyChatPromptBtn" onclick="copyChatPrompt()">📋 AI 챗용 프롬프트 만들기</button>
+                <div class="input-field">
+                    <label for="chatPromptOutput">생성된 프롬프트 (복사해서 AI 챗에 붙여넣으세요)</label>
+                    <textarea id="chatPromptOutput" rows="4" readonly placeholder="위 버튼을 누르면 여기에 프롬프트가 생성됩니다."></textarea>
+                </div>
+                <div class="input-field">
+                    <label for="chatPasteInput">AI 챗의 답변을 여기에 붙여넣으세요</label>
+                    <textarea id="chatPasteInput" rows="4" placeholder="단어 | 뜻 | 예문 | 예문 해석 형식의 답변을 붙여넣으세요"></textarea>
+                </div>
+                <button class="btn" id="applyChatPasteBtn" onclick="applyPastedExamples()">📥 붙여넣은 내용 적용</button>
+                <div class="generate-progress" id="chatPasteResult"></div>
+            </div>
+
+            <div class="input-section" id="inputSection" style="display:none;">
                 <div class="input-group">
-                    <div class="input-field">
-                        <label for="wordInput">독일어 단어</label>
-                        <input type="text" id="wordInput" placeholder="단어 입력">
+                    <div style="display:flex;gap:10px;">
+                        <div class="input-field" style="flex:1;">
+                            <label for="wordInput">독일어 단어</label>
+                            <input type="text" id="wordInput" placeholder="단어 입력">
+                        </div>
+                        <div class="input-field" style="flex:1;">
+                            <label for="meaningInput">한글 뜻</label>
+                            <input type="text" id="meaningInput" placeholder="뜻 입력">
+                        </div>
                     </div>
-                    <div class="input-field">
-                        <label for="meaningInput">한글 뜻</label>
-                        <input type="text" id="meaningInput" placeholder="뜻 입력">
+                    <div style="display:flex;gap:10px;">
+                        <div class="input-field" style="flex:1;">
+                            <label for="exampleInput">예문 (독일어)</label>
+                            <textarea id="exampleInput" placeholder="예문 입력 (선택)" rows="2"></textarea>
+                        </div>
+                        <div class="input-field" style="flex:1;">
+                            <label for="exampleTranslationInput">예문 해석 (한글)</label>
+                            <textarea id="exampleTranslationInput" placeholder="예문 해석 입력 (선택)" rows="2"></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="button-group">
                     <button class="btn" onclick="addWord()">➕ 추가</button>
-                    <button class="btn btn-export" onclick="exportToExcel()">📥 내보내기</button>
-                    <button class="btn btn-export" onclick="document.getElementById('fileInput').click()">📂 가져오기</button>
-                    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="importFromExcel(event)" style="display: none;">
                 </div>
             </div>
 
@@ -651,8 +760,14 @@
                 <div class="flashcard-progress" id="flashcard-progress">1 / 10</div>
                 <div class="flashcard" id="flashcard">
                     <div class="flashcard-inner">
-                        <div class="flashcard-face flashcard-front" id="flashcard-front">단어</div>
-                        <div class="flashcard-face flashcard-back" id="flashcard-back">뜻</div>
+                        <div class="flashcard-face flashcard-front">
+                            <div id="flashcard-front">단어</div>
+                            <div class="flashcard-example" id="flashcard-front-example"></div>
+                        </div>
+                        <div class="flashcard-face flashcard-back">
+                            <div id="flashcard-back">뜻</div>
+                            <div class="flashcard-example" id="flashcard-back-example"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="flashcard-controls">
@@ -703,18 +818,121 @@
 
     loadFromStorage();
 
+    function toggleInputSection() {
+        const section = document.getElementById('inputSection');
+        const btn = document.getElementById('toggleInputSectionBtn');
+        const isHidden = section.style.display === 'none';
+        section.style.display = isHidden ? 'block' : 'none';
+        btn.textContent = isHidden ? '➖ 입력창 닫기' : '➕ 새 단어 직접 입력';
+        if (isHidden) document.getElementById('wordInput').focus();
+    }
+
+    function toggleExampleSection() {
+        const section = document.getElementById('exampleSection');
+        const btn = document.getElementById('toggleExampleSectionBtn');
+        const isHidden = section.style.display === 'none';
+        section.style.display = isHidden ? 'flex' : 'none';
+        btn.textContent = isHidden ? '➖ 닫기' : '🤖 AI 챗으로 예문 만들기';
+    }
+
+    // ====== AI 챗(claude.ai, gemini.google.com 등)에 복사/붙여넣기로 예문 채우기 ======
+    function getChatPromptTargets() {
+        const overwrite = document.getElementById('overwriteExamplesCheckbox').checked;
+        return vocabulary.words.filter(w => overwrite || !w.example);
+    }
+
+    function copyChatPrompt() {
+        const targets = getChatPromptTargets();
+        if (targets.length === 0) {
+            alert('프롬프트를 생성할 단어가 없습니다. (모든 단어에 이미 예문이 있습니다)');
+            return;
+        }
+
+        const header = '다음은 독일어 단어 목록입니다. 각 단어마다 그 단어를 사용한 짧고 자연스러운 독일어 예문 한 문장과, 그 예문의 자연스러운 한국어 번역을 만들어주세요.\n\n다른 설명이나 표 머리글 없이, 아래 형식 그대로 한 줄에 한 단어씩 파이프(|)로 구분해서만 답변해주세요:\n단어 | 뜻 | 예문 | 예문 해석\n\n단어 목록:';
+        const lines = targets.map(w => `${w.word} | ${w.meaning}`);
+        const prompt = header + '\n' + lines.join('\n');
+
+        const output = document.getElementById('chatPromptOutput');
+        output.value = prompt;
+
+        let copied = false;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(prompt).catch(() => {});
+        }
+        try {
+            output.focus();
+            output.select();
+            copied = document.execCommand('copy');
+        } catch (e) {
+            copied = false;
+        }
+
+        alert(`${targets.length}개 단어에 대한 프롬프트를 만들었습니다.${copied ? ' (클립보드에 복사됨)' : ''}\n\nClaude.ai나 Gemini 같은 AI 채팅 화면에 붙여넣고 답변을 받은 뒤,\n그 답변을 아래 "AI 챗의 답변을 여기에 붙여넣으세요" 칸에 붙여넣고 적용 버튼을 눌러주세요.`);
+    }
+
+    function applyPastedExamples() {
+        const raw = document.getElementById('chatPasteInput').value;
+        if (!raw.trim()) {
+            alert('붙여넣은 내용이 없습니다.');
+            return;
+        }
+
+        const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+        let updated = 0;
+        const notFound = [];
+
+        lines.forEach(line => {
+            if (/^단어\s*[|\t]/.test(line)) return; // 헤더 줄 스킵
+
+            const parts = line.split(/\t|\|/).map(p => p.trim());
+            if (parts.length < 3) return; // 예문이 없는 줄은 스킵
+
+            const wordPart = parts[0];
+            const examplePart = parts[2];
+            const translationPart = parts[3];
+            if (!wordPart) return;
+
+            const target = vocabulary.words.find(w => w.word.toLowerCase() === wordPart.toLowerCase());
+            if (!target) {
+                notFound.push(wordPart);
+                return;
+            }
+
+            if (examplePart) target.example = examplePart;
+            if (translationPart) target.exampleTranslation = translationPart;
+            updated++;
+        });
+
+        if (updated > 0) {
+            saveToStorage();
+            updateDisplay(document.getElementById('searchInput').value);
+        }
+
+        let message = `${updated}개 단어에 예문을 적용했습니다.`;
+        if (notFound.length > 0) {
+            message += ` 일치하는 단어를 찾지 못함: ${notFound.slice(0, 10).join(', ')}${notFound.length > 10 ? ' 외 ' + (notFound.length - 10) + '개' : ''}`;
+        }
+        document.getElementById('chatPasteResult').textContent = message;
+        alert(message);
+    }
+    // ===========================================
+
     function addWord() {
         const wordInput = document.getElementById('wordInput');
         const meaningInput = document.getElementById('meaningInput');
+        const exampleInput = document.getElementById('exampleInput');
+        const exampleTranslationInput = document.getElementById('exampleTranslationInput');
         const word = wordInput.value.trim();
         const meaning = meaningInput.value.trim();
+        const example = exampleInput.value.trim();
+        const exampleTranslation = exampleTranslationInput.value.trim();
 
         if (word && meaning) {
             // 중복 체크 (대소문자 구분 없이)
-            const isDuplicate = vocabulary.words.some(w => 
+            const isDuplicate = vocabulary.words.some(w =>
                 w.word.toLowerCase() === word.toLowerCase()
             );
-            
+
             if (isDuplicate) {
                 alert('이미 등록된 단어입니다.');
                 wordInput.focus();
@@ -725,11 +943,15 @@
                 id: nextId++,
                 word: word,
                 meaning: meaning,
+                example: example,
+                exampleTranslation: exampleTranslation,
                 memorized: false,
                 addedDate: new Date().toISOString()
             });
             wordInput.value = '';
             meaningInput.value = '';
+            exampleInput.value = '';
+            exampleTranslationInput.value = '';
             wordInput.focus();
             saveToStorage();
             updateDisplay();
@@ -775,13 +997,15 @@
         if (wordItem) {
             wordItem.classList.add('edit-mode');
             wordItem.innerHTML = `
-                <div class="edit-inputs">
+                <div class="edit-inputs" onclick="event.stopPropagation()">
                     <input type="text" id="edit-word-${id}" value="${word.word}">
                     <input type="text" id="edit-meaning-${id}" value="${word.meaning}">
+                    <textarea id="edit-example-${id}" rows="2" placeholder="예문 (독일어)">${word.example || ''}</textarea>
+                    <textarea id="edit-exampleTranslation-${id}" rows="2" placeholder="예문 해석 (한글)">${word.exampleTranslation || ''}</textarea>
                 </div>
                 <div class="edit-buttons">
-                    <button class="btn btn-small" onclick="saveEdit(${id})">저장</button>
-                    <button class="btn btn-secondary btn-small" onclick="cancelEdit(${id})">취소</button>
+                    <button class="btn btn-small" onclick="event.stopPropagation(); saveEdit(${id})">저장</button>
+                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); cancelEdit(${id})">취소</button>
                 </div>
             `;
         }
@@ -790,17 +1014,21 @@
     function saveEdit(id) {
         const wordInput = document.getElementById(`edit-word-${id}`);
         const meaningInput = document.getElementById(`edit-meaning-${id}`);
-        
+        const exampleInput = document.getElementById(`edit-example-${id}`);
+        const exampleTranslationInput = document.getElementById(`edit-exampleTranslation-${id}`);
+
         if (wordInput && meaningInput) {
             const newWord = wordInput.value.trim();
             const newMeaning = meaningInput.value.trim();
-            
+            const newExample = exampleInput ? exampleInput.value.trim() : '';
+            const newExampleTranslation = exampleTranslationInput ? exampleTranslationInput.value.trim() : '';
+
             if (newWord && newMeaning) {
                 // 중복 체크 (자기 자신은 제외)
-                const isDuplicate = vocabulary.words.some(w => 
+                const isDuplicate = vocabulary.words.some(w =>
                     w.id !== id && w.word.toLowerCase() === newWord.toLowerCase()
                 );
-                
+
                 if (isDuplicate) {
                     alert('이미 등록된 단어입니다.');
                     return;
@@ -810,6 +1038,8 @@
                 if (word) {
                     word.word = newWord;
                     word.meaning = newMeaning;
+                    word.example = newExample;
+                    word.exampleTranslation = newExampleTranslation;
                     saveToStorage();
                     updateDisplay();
                 }
@@ -906,6 +1136,8 @@
                         onclick="if (!event.target.closest('.word-actions')) enterEditMode(${word.id})">
                         <div class="word-text">${word.word}</div>
                         <div class="word-meaning">${word.meaning}</div>
+                        ${word.example ? `<div class="word-example">${word.example}</div>` : ''}
+                        ${word.exampleTranslation ? `<div class="word-example-translation">${word.exampleTranslation}</div>` : ''}
                         <div class="word-actions">
                             <button class="btn btn-small" onclick="event.stopPropagation(); toggleMemorized(${word.id})">
                                 ${word.memorized ? '암기 취소' : '암기 완료'}
@@ -960,6 +1192,8 @@
         const data = vocabulary.words.map(w => ({
             '독일어': w.word,
             '한글 뜻': w.meaning,
+            '예문': w.example || '',
+            '예문 해석': w.exampleTranslation || '',
             '암기 여부': w.memorized,
             '추가 날짜': formatDate(w.addedDate)
         }));
@@ -985,25 +1219,40 @@
                 let importCount = 0;
                 let duplicateCount = 0;
 
+                let updatedCount = 0;
+
                 jsonData.forEach(row => {
                     const word = row['독일어'] || row['word'] || row['Word'];
                     const meaning = row['한글 뜻'] || row['meaning'] || row['Meaning'];
+                    const example = row['예문'] || row['example'] || row['Example'] || '';
+                    const exampleTranslation = row['예문 해석'] || row['exampleTranslation'] || row['Example Translation'] || '';
                     const memorized = row['암기 여부'] === true || row['암기 여부'] === 'true' || row['암기 여부'] === 'TRUE';
                     const addedDate = row['추가 날짜'] || row['date'] || row['Date'];
-                    
+
                     if (word && meaning) {
                         // 중복 체크
-                        const isDuplicate = vocabulary.words.some(w => 
+                        const existing = vocabulary.words.find(w =>
                             w.word.toLowerCase() === String(word).trim().toLowerCase()
                         );
-                        
-                        if (isDuplicate) {
-                            duplicateCount++;
+
+                        if (existing) {
+                            // 이미 있는 단어면 새로 추가하지 않고, 예문/예문 해석만 채워넣는다
+                            const trimmedExample = String(example).trim();
+                            const trimmedTranslation = String(exampleTranslation).trim();
+                            if (trimmedExample || trimmedTranslation) {
+                                if (trimmedExample) existing.example = trimmedExample;
+                                if (trimmedTranslation) existing.exampleTranslation = trimmedTranslation;
+                                updatedCount++;
+                            } else {
+                                duplicateCount++;
+                            }
                         } else {
                             vocabulary.words.push({
                                 id: nextId++,
                                 word: String(word).trim(),
                                 meaning: String(meaning).trim(),
+                                example: String(example).trim(),
+                                exampleTranslation: String(exampleTranslation).trim(),
                                 memorized: memorized,
                                 addedDate: addedDate ? new Date(addedDate).toISOString() : new Date().toISOString()
                             });
@@ -1012,12 +1261,15 @@
                     }
                 });
 
-                if (importCount > 0 || duplicateCount > 0) {
+                if (importCount > 0 || duplicateCount > 0 || updatedCount > 0) {
                     saveToStorage();
                     updateDisplay();
-                    let message = `${importCount}개의 단어를 불러왔습니다.`;
+                    let message = `${importCount}개의 새 단어를 불러왔습니다.`;
+                    if (updatedCount > 0) {
+                        message += `\n${updatedCount}개의 기존 단어에 예문을 채웠습니다.`;
+                    }
                     if (duplicateCount > 0) {
-                        message += `\n${duplicateCount}개의 중복 단어는 제외되었습니다.`;
+                        message += `\n${duplicateCount}개의 중복 단어는 (예문 없이) 제외되었습니다.`;
                     }
                     alert(message);
                 } else {
@@ -1066,7 +1318,9 @@
         document.getElementById('flashcard-progress').textContent =
             `${currentFlashcardIndex + 1} / ${flashcardWords.length}`;
         document.getElementById('flashcard-front').textContent = word.word;
+        document.getElementById('flashcard-front-example').textContent = word.example || '';
         document.getElementById('flashcard-back').textContent = word.meaning;
+        document.getElementById('flashcard-back-example').textContent = word.exampleTranslation || '';
         document.getElementById('flashcard').classList.remove('is-flipped');
 
         const actionBtn = document.getElementById('flashcard-action-btn');
